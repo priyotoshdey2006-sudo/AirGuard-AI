@@ -72,3 +72,6 @@ Thumbs.db
 *.swo
 c/
 *.exe
+
+# TypeScript build cache
+*.tsbuildinfo

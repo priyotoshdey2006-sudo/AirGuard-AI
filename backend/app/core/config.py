@@ -1,7 +1,8 @@
 """Application configuration and environment settings."""
 
-from typing import List
-from pydantic import model_validator
+from typing import List, Union
+import json
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,6 +18,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "AirGuard AI"
     ENVIRONMENT: str = "development"
     API_V1_STR: str = "/api/v1"
+    PORT: int = 8000
     
     # Security & JWT
     SECRET_KEY: str = "airguard-development-secret-key-change-in-production-min32"
@@ -31,6 +33,21 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3000",
         "*",
     ]
+
+    @field_validator("BACKEND_CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
+        if isinstance(v, str):
+            v_stripped = v.strip()
+            if v_stripped.startswith("[") and v_stripped.endswith("]"):
+                try:
+                    return json.loads(v_stripped)
+                except Exception:
+                    pass
+            return [origin.strip() for origin in v_stripped.split(",") if origin.strip()]
+        elif isinstance(v, list):
+            return v
+        return []
 
     # Database (PostgreSQL with PostGIS in production, SQLite dev fallback)
     DATABASE_URL: str = "sqlite:///./airguard_dev.db"

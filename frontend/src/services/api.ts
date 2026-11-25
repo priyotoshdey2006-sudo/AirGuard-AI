@@ -10,7 +10,10 @@ import {
   SensitivityLevel,
 } from '../types';
 
-const API_BASE = '/api/v1';
+// In production on Vercel, requests are dispatched to the deployed Render backend via VITE_API_BASE_URL.
+// In local development, it falls back to '/api/v1' which is proxied by Vite to http://localhost:8000.
+const rawBase = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '');
+const API_BASE = rawBase ? (rawBase.endsWith('/api/v1') ? rawBase : `${rawBase}/api/v1`) : '/api/v1';
 
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
