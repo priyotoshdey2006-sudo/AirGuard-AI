@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { Navbar, CITIES } from './components/layout/Navbar';
 import { AQIDashboard } from './components/aqi/AQIDashboard';
 import { ForecastView } from './components/forecast/ForecastView';
@@ -6,6 +7,8 @@ import { DailyRoutinePlanner } from './components/recommendations/DailyRoutinePl
 import { IndoorAdvisor } from './components/indoor/IndoorAdvisor';
 import { EcoCommutePlanner } from './components/transport/EcoCommutePlanner';
 import { CommunityHazardMap } from './components/community/CommunityHazardMap';
+import { EnvironmentalImpactTracker } from './components/impact/EnvironmentalImpactTracker';
+import { AboutPlatform } from './components/about/AboutPlatform';
 import { AICopilotDrawer } from './components/assistant/AICopilotDrawer';
 import { api } from './services/api';
 import {
@@ -18,9 +21,10 @@ import {
   RoutinePlan,
   SensitivityLevel,
 } from './types';
+import { Shield, Sparkles } from 'lucide-react';
 
 export function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const location = useLocation();
   const [selectedCityName, setSelectedCityName] = useState(CITIES[0].name);
   const [sensitivity, setSensitivity] = useState<SensitivityLevel>('ASTHMATIC');
 
@@ -83,15 +87,18 @@ export function App() {
     loadCityData();
   }, [selectedCityName]);
 
-  // Lazy load Indoor & Transport if tab opens
+  // Lazy load Indoor & Transport when routes are visited
   useEffect(() => {
-    if (activeTab === 'indoor' && !indoorGuidance) {
+    if (location.pathname === '/indoor' && !indoorGuidance) {
       handleCalculateIndoor(400, true);
     }
-    if (activeTab === 'transport' && !routeComparison) {
+    if (location.pathname === '/transport' && !routeComparison) {
       handleCompareRoutes('Central Station', 'Business District');
     }
-  }, [activeTab]);
+    if (location.pathname === '/advisor') {
+      setIsAssistantOpen(true);
+    }
+  }, [location.pathname]);
 
   // Handlers
   const handleGenerateRoutine = async (activities: string[]) => {
@@ -216,10 +223,13 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col font-sans">
+    <div className="min-h-screen bg-midnight-950 text-slate-100 flex flex-col font-sans relative selection:bg-emerald-500/25 selection:text-emerald-200">
+      {/* Liquid Glass Ambient Background Layers */}
+      <div className="bg-liquid-mesh" aria-hidden="true" />
+      <div className="bg-liquid-grid" aria-hidden="true" />
+
+      {/* Primary Floating Navigation */}
       <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
         selectedCity={selectedCityName}
         setSelectedCity={setSelectedCityName}
         sensitivity={sensitivity}
@@ -227,57 +237,91 @@ export function App() {
         onOpenAssistant={() => setIsAssistantOpen(true)}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {activeTab === 'dashboard' && (
-          <AQIDashboard
-            data={currentAQI}
-            loading={loadingAQI}
-            onRefresh={loadCityData}
+      {/* Main Content Area */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+        <Routes>
+          {/* Module 1: Air Quality Dashboard */}
+          <Route
+            path="/"
+            element={
+              <AQIDashboard
+                data={currentAQI}
+                loading={loadingAQI}
+                onRefresh={loadCityData}
+              />
+            }
           />
-        )}
 
-        {activeTab === 'forecast' && (
-          <ForecastView forecast={forecast} loading={loadingForecast} />
-        )}
-
-        {activeTab === 'routine' && (
-          <DailyRoutinePlanner
-            routine={routine}
-            loading={loadingRoutine}
-            sensitivity={sensitivity}
-            onGenerate={handleGenerateRoutine}
+          {/* Module 3: Pollution Forecast */}
+          <Route
+            path="/forecast"
+            element={<ForecastView forecast={forecast} loading={loadingForecast} />}
           />
-        )}
 
-        {activeTab === 'indoor' && (
-          <IndoorAdvisor
-            guidance={indoorGuidance}
-            loading={loadingIndoor}
-            onCalculate={handleCalculateIndoor}
+          {/* Module 5: Personalized Daily Routine Planner */}
+          <Route
+            path="/planner"
+            element={
+              <DailyRoutinePlanner
+                routine={routine}
+                loading={loadingRoutine}
+                sensitivity={sensitivity}
+                onGenerate={handleGenerateRoutine}
+              />
+            }
           />
-        )}
 
-        {activeTab === 'transport' && (
-          <EcoCommutePlanner
-            comparison={routeComparison}
-            loading={loadingTransport}
-            onCompare={handleCompareRoutes}
+          {/* Module 6: Indoor Air Quality Guide */}
+          <Route
+            path="/indoor"
+            element={
+              <IndoorAdvisor
+                guidance={indoorGuidance}
+                loading={loadingIndoor}
+                onCalculate={handleCalculateIndoor}
+              />
+            }
           />
-        )}
 
-        {activeTab === 'community' && (
-          <CommunityHazardMap
-            reports={communityReports}
-            loading={loadingCommunity}
-            userLat={currentCity.lat}
-            userLon={currentCity.lon}
-            onSubmitReport={handleSubmitReport}
-            onUpvote={handleUpvoteReport}
+          {/* Module 7: Sustainable Alternatives / Eco-Commute */}
+          <Route
+            path="/transport"
+            element={
+              <EcoCommutePlanner
+                comparison={routeComparison}
+                loading={loadingTransport}
+                onCompare={handleCompareRoutes}
+              />
+            }
           />
-        )}
+
+          {/* Module 2: Location Search and Pollution Hazard Map */}
+          <Route
+            path="/map"
+            element={
+              <CommunityHazardMap
+                reports={communityReports}
+                loading={loadingCommunity}
+                userLat={currentCity.lat}
+                userLon={currentCity.lon}
+                onSubmitReport={handleSubmitReport}
+                onUpvote={handleUpvoteReport}
+              />
+            }
+          />
+
+          {/* Module 8: Environmental Impact Tracker */}
+          <Route path="/impact" element={<EnvironmentalImpactTracker />} />
+
+          {/* Module 9: About and Developer Information */}
+          <Route path="/about" element={<AboutPlatform />} />
+
+          {/* Fallback to Dashboard */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </main>
 
-      {/* Floating AI Assistant Drawer */}
+      {/* Module 4: Floating AI Environmental Advisor Copilot */}
       <AICopilotDrawer
         isOpen={isAssistantOpen}
         onClose={() => setIsAssistantOpen(false)}
@@ -288,16 +332,24 @@ export function App() {
         sensitivity={sensitivity}
       />
 
-      {/* Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950/80 py-6 text-center text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p>
-            AirGuard AI — Urban Environmental Intelligence Platform • Built for Hack2Skill PromptWars
-          </p>
-          <div className="flex items-center gap-4 text-slate-400">
-            <span>Powered by Open-Meteo & Gemini</span>
-            <span>•</span>
-            <span className="text-teal-400">Zero Fabricated Data Guarantee</span>
+      {/* Liquid Glass Footer */}
+      <footer className="relative z-10 border-t border-white/[0.06] bg-midnight-950/60 backdrop-blur-xl py-6 text-center text-xs text-slate-400">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-5 h-5 rounded-md bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <Shield className="w-3 h-3" />
+            </div>
+            <p className="text-slate-300 font-medium">
+              AirGuard AI — Urban Environmental Intelligence Platform
+            </p>
+          </div>
+          <div className="flex items-center gap-4 text-slate-400 text-[11px]">
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Live CAMS & Open-Meteo Telemetry
+            </span>
+            <span className="text-slate-600">•</span>
+            <span className="text-emerald-400 font-medium">Zero-Fabrication Guarantee</span>
           </div>
         </div>
       </footer>

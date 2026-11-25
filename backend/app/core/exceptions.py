@@ -18,6 +18,11 @@ class ExternalServiceError(AirGuardException):
         super().__init__(detail=detail, status_code=status.HTTP_502_BAD_GATEWAY)
 
 
+class UpstreamServiceUnavailableException(AirGuardException):
+    def __init__(self, detail: str = "Upstream environmental data service unavailable"):
+        super().__init__(detail=detail, status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+
 class UnauthorizedException(AirGuardException):
     def __init__(self, detail: str = "Could not validate credentials"):
         super().__init__(

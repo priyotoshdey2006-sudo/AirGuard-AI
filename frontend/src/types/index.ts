@@ -9,13 +9,13 @@ export type SensitivityLevel =
   | 'ATHLETE';
 
 export interface Pollutants {
-  pm2_5: float;
-  pm10: float;
-  o3: float;
-  no2: float;
-  so2: float;
-  co: float;
-  uv_index: float;
+  pm2_5: number | null;
+  pm10: number | null;
+  o3: number | null;
+  no2: number | null;
+  so2: number | null;
+  co: number | null;
+  uv_index: number | null;
 }
 
 type float = number;
@@ -24,8 +24,8 @@ export interface CurrentAQI {
   latitude: number;
   longitude: number;
   location_name: string;
-  aqi_us: number;
-  aqi_european: number;
+  aqi_us: number | null;
+  aqi_european: number | null;
   category: string;
   category_color: string;
   dominant_pollutant: string;
@@ -33,6 +33,23 @@ export interface CurrentAQI {
   health_advice: string;
   provenance: Provenance;
   timestamp: string;
+  location?: {
+    latitude: number;
+    longitude: number;
+    grid_latitude?: number | null;
+    grid_longitude?: number | null;
+    timezone?: string;
+  };
+  us_epa_model_proxy?: {
+    proxy_index?: number | null;
+    category?: string;
+    dominant_pollutant?: string;
+  };
+  cpcb_model_proxy?: {
+    proxy_index?: number | null;
+    category?: string;
+    dominant_pollutant?: string;
+  };
 }
 
 export interface HourlyForecast {

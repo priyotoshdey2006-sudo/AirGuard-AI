@@ -1,98 +1,119 @@
-"""Pydantic schemas for Air Quality monitoring, forecasts, and indoor guidance."""
+"""Pydantic v2 schemas for Air Quality monitoring, forecasts, and provenance tracking."""
 
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import Dict, List, Optional
 from pydantic import BaseModel, Field
 
 
 class ProvenanceEnum(str, Enum):
-    OBSERVED = "OBSERVED"
-    FORECAST = "FORECAST"
-    ESTIMATED = "ESTIMATED"
+    MODEL_ANALYSIS = "MODEL_ANALYSIS"
+    MODEL_FORECAST = "MODEL_FORECAST"
+    GROUND_OBSERVATION = "GROUND_OBSERVATION"
+    UNVERIFIED_ESTIMATE = "UNVERIFIED_ESTIMATE"
+    ESTIMATED = "UNVERIFIED_ESTIMATE"
+    OBSERVED = "GROUND_OBSERVATION"
+    FORECAST = "MODEL_FORECAST"
 
 
-class AQICategoryEnum(str, Enum):
-    GOOD = "Good"
-    MODERATE = "Moderate"
-    UNHEALTHY_SENSITIVE = "Unhealthy for Sensitive Groups"
-    UNHEALTHY = "Unhealthy"
-    VERY_UNHEALTHY = "Very Unhealthy"
-    HAZARDOUS = "Hazardous"
+class LocationMetadata(BaseModel):
+    latitude: float = Field(..., ge=-90.0, le=90.0, description="Requested query latitude")
+    longitude: float = Field(..., ge=-180.0, le=180.0, description="Requested query longitude")
+    grid_latitude: Optional[float] = Field(
+        None, ge=-90.0, le=90.0, description="Upstream atmospheric model grid centroid latitude"
+    )
+    grid_longitude: Optional[float] = Field(
+        None, ge=-180.0, le=180.0, description="Upstream atmospheric model grid centroid longitude"
+    )
+    timezone: str = "UTC"
 
 
-class Pollutants(BaseModel):
-    pm2_5: float = Field(..., description="PM2.5 concentration in µg/m³")
-    pm10: float = Field(..., description="PM10 concentration in µg/m³")
-    o3: float = Field(0.0, description="Ozone concentration in µg/m³")
-    no2: float = Field(0.0, description="Nitrogen dioxide in µg/m³")
-    so2: float = Field(0.0, description="Sulfur dioxide in µg/m³")
-    co: float = Field(0.0, description="Carbon monoxide in µg/m³")
-    uv_index: float = Field(0.0, description="Ultraviolet radiation index")
+class CPCBModelProxyResponse(BaseModel):
+    proxy_index: Optional[int] = Field(None, description="CPCB-breakpoint-based model proxy index (0-500)")
+    category: Optional[str] = Field(None, description="Good | Satisfactory | Moderate | Poor | Very Poor | Severe")
+    dominant_pollutant: Optional[str] = Field(None, description="Pollutant yielding highest sub-index")
+    index_type: str = "CPCB_BREAKPOINT_BASED_MODEL_PROXY"
+    criteria_met: bool = Field(..., description="True if >= 3 pollutants available including PM2.5 or PM10")
+    pollutant_count_evaluated: int = 0
+    sub_indices: Dict[str, int] = Field(default_factory=dict)
+    regulatory_disclaimer: str
+    criteria_explanation: str
+
+
+class USEPAModelProxyResponse(BaseModel):
+    proxy_index: Optional[int] = Field(None, description="US EPA AQI proxy index (0-500)")
+    category: Optional[str] = Field(None, description="Good | Moderate | USG | Unhealthy | Very Unhealthy | Hazardous")
+    dominant_pollutant: Optional[str] = None
+    index_type: str = "US_EPA_BREAKPOINT_BASED_MODEL_PROXY"
+    sub_indices: Dict[str, int] = Field(default_factory=dict)
+    regulatory_disclaimer: str
+
+
+class PollutantDetail(BaseModel):
+    concentration: Optional[float] = None
+    unit: str
+    averaging_basis: str = "HOURLY_MODEL_ESTIMATE"
+
+
+class PollutantsCollection(BaseModel):
+    pm2_5: PollutantDetail
+    pm10: PollutantDetail
+    no2: PollutantDetail
+    o3: PollutantDetail
+    so2: PollutantDetail
+    co: PollutantDetail
+    nh3: Optional[PollutantDetail] = None
+    pb: Optional[PollutantDetail] = None
+    uv_index: Optional[PollutantDetail] = None
+
+
+class WHOGuidelineBenchmarkItem(BaseModel):
+    pollutant: str
+    hourly_model_concentration: float
+    guideline_24h_benchmark_level: float
+    ratio_to_24h_benchmark: float
+    comparison_status: str
+    benchmark_disclaimer: str
+
+
+class ProvenanceMetadata(BaseModel):
+    source_provider: str = "Open-Meteo Air Quality API"
+    native_atmospheric_model: str = "ECMWF CAMS Global (IFS-AER)"
+    native_spatial_resolution: str = "0.4° (~45 km)"
+    native_temporal_resolution: str = "3-hourly"
+    temporal_processing: str = (
+        "Hourly output as provided by Open-Meteo API "
+        "(resampled/interpolated from ECMWF CAMS 3-hourly model grid by upstream provider; "
+        "exact interpolation algorithm is not specified by Open-Meteo documentation)."
+    )
+    data_provenance: str = "MODEL_ANALYSIS"
+    is_ground_observation: bool = False
+    model_cycle_utc: Optional[str] = None
+    model_valid_utc: str
+    model_valid_local: str
+    retrieved_at_utc: str
 
 
 class CurrentAQIResponse(BaseModel):
-    latitude: float
-    longitude: float
-    location_name: Optional[str] = "Detected Location"
-    aqi_us: int = Field(..., description="US EPA Air Quality Index (0-500)")
-    aqi_european: int = Field(..., description="European Air Quality Index (0-100)")
-    category: AQICategoryEnum
-    category_color: str
-    dominant_pollutant: str
-    pollutants: Pollutants
-    health_advice: str
-    provenance: ProvenanceEnum = ProvenanceEnum.OBSERVED
-    timestamp: datetime
+    location: LocationMetadata
+    cpcb_model_proxy: CPCBModelProxyResponse
+    us_epa_model_proxy: USEPAModelProxyResponse
+    pollutants: PollutantsCollection
+    who_guideline_benchmark: List[WHOGuidelineBenchmarkItem]
+    provenance: ProvenanceMetadata
 
 
 class HourlyForecastItem(BaseModel):
-    time: str
-    aqi_us: int
-    pm2_5: float
-    pm10: float
-    category: str
-
-
-class DailyForecastItem(BaseModel):
-    date: str
-    max_aqi: int
-    min_aqi: int
-    dominant_pollutant: str
-    category: str
+    time_utc: str
+    time_local: str
+    cpcb_proxy_index: Optional[int] = None
+    us_proxy_index: Optional[int] = None
+    pm2_5: Optional[float] = None
+    pm10: Optional[float] = None
+    category: Optional[str] = None
 
 
 class ForecastAQIResponse(BaseModel):
-    latitude: float
-    longitude: float
-    hourly: List[HourlyForecastItem]
-    daily: List[DailyForecastItem]
-    provenance: ProvenanceEnum = ProvenanceEnum.FORECAST
-
-
-class IndoorGuidanceRequest(BaseModel):
-    latitude: float = Field(..., ge=-90.0, le=90.0)
-    longitude: float = Field(..., ge=-180.0, le=180.0)
-    room_sqft: float = Field(350.0, ge=50.0, le=10000.0)
-    has_hepa_filter: bool = True
-    has_ac: bool = True
-    building_seal_quality: str = Field("standard", description="poor | standard | airtight")
-
-
-class SafeVentilationWindow(BaseModel):
-    start_time: str
-    end_time: str
-    expected_outdoor_aqi: int
-    recommendation: str
-
-
-class IndoorGuidanceResponse(BaseModel):
-    outdoor_aqi: int
-    estimated_indoor_aqi: int
-    indoor_category: str
-    window_advice: str
-    safe_ventilation_windows: List[SafeVentilationWindow]
-    hepa_runtime_recommendation_hours: float
-    air_cleaner_speed: str
-    tips: List[str]
-    provenance: ProvenanceEnum = ProvenanceEnum.ESTIMATED
+    location: LocationMetadata
+    provenance: ProvenanceMetadata
+    forecast_series: List[HourlyForecastItem]

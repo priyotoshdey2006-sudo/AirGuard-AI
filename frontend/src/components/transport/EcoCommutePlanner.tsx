@@ -21,41 +21,43 @@ export const EcoCommutePlanner: React.FC<Props> = ({ comparison, loading, onComp
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+      {/* Header Capsule */}
+      <div className="liquid-glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-slate-100">Sustainable Transit & Respiratory Impact</h2>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-500/20 text-teal-300 border border-teal-500/30">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+              Sustainable Transit & Respiratory Impact
+            </h1>
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
               MULTI-MODAL ENGINE
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Compares inhaled pollutant intake against net carbon dioxide emissions across transit options.
+          <p className="text-xs text-slate-400 mt-1">
+            Compares inhaled pollutant particulate volume against net carbon emissions across urban transit alternatives.
           </p>
         </div>
       </div>
 
       {/* Commute Route Form */}
-      <div className="glass-panel p-6 rounded-2xl">
+      <div className="liquid-glass-card rounded-3xl p-6 sm:p-7">
         <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">Origin Point</label>
+            <label className="block text-xs font-medium text-slate-400 mb-1.5">Origin Point</label>
             <input
               type="text"
               value={origin}
               onChange={(e) => setOrigin(e.target.value)}
-              className="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-teal-500"
+              className="w-full bg-midnight-950/70 border border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-400/50 shadow-inner"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">Destination Point</label>
+            <label className="block text-xs font-medium text-slate-400 mb-1.5">Destination Point</label>
             <input
               type="text"
               value={destination}
               onChange={(e) => setDestination(e.target.value)}
-              className="w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-teal-500"
+              className="w-full bg-midnight-950/70 border border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-400/50 shadow-inner"
             />
           </div>
 
@@ -63,9 +65,9 @@ export const EcoCommutePlanner: React.FC<Props> = ({ comparison, loading, onComp
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-bold text-xs rounded-lg transition-colors shadow-md disabled:opacity-50"
+              className="w-full py-2 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-midnight-950 font-bold text-xs rounded-xl shadow-[0_4px_16px_rgba(16,185,129,0.25)] transition-all active:scale-[0.99] disabled:opacity-50"
             >
-              {loading ? 'Evaluating Transit...' : 'Compare Transit Alternatives'}
+              {loading ? 'Evaluating Transit Options...' : 'Compare Transit Alternatives'}
             </button>
           </div>
         </form>
@@ -73,44 +75,54 @@ export const EcoCommutePlanner: React.FC<Props> = ({ comparison, loading, onComp
 
       {comparison && (
         <div className="space-y-6">
-          {/* Summary Impact Metrics */}
+          {/* Summary Impact Metrics Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="glass-panel p-5 rounded-2xl border border-slate-800">
-              <span className="text-xs text-slate-400 uppercase font-bold">Estimated Distance</span>
-              <div className="text-3xl font-black text-slate-100 mt-2">{comparison.distance_km} km</div>
-              <div className="text-xs text-slate-500 mt-1">Urban transit corridor</div>
-            </div>
-
-            <div className="glass-panel p-5 rounded-2xl border border-teal-500/30 bg-teal-500/5">
-              <span className="text-xs text-teal-400 uppercase font-bold">Cleanest Air Transit</span>
-              <div className="text-3xl font-black text-teal-300 mt-2">{comparison.cleanest_mode}</div>
-              <div className="text-xs text-slate-300 mt-1">Lowest inhaled particulate exposure</div>
-            </div>
-
-            <div className="glass-panel p-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/5">
-              <span className="text-xs text-emerald-400 uppercase font-bold">Max Carbon Savings</span>
-              <div className="text-3xl font-black text-emerald-300 mt-2 flex items-center gap-2">
-                <TreePine className="w-6 h-6 text-emerald-400" />
-                <span>{comparison.total_trees_equivalent} Trees/yr</span>
+            <div className="liquid-glass-card p-5 sm:p-6 rounded-2xl">
+              <span className="text-xs text-slate-400 uppercase font-bold tracking-wider">
+                Corridor Distance
+              </span>
+              <div className="text-3xl font-black text-white tabular-nums mt-2">
+                {comparison.distance_km} km
               </div>
-              <div className="text-xs text-slate-300 mt-1">Equivalent carbon offset per trip</div>
+              <div className="text-xs text-slate-400 mt-1">Urban multi-modal route</div>
+            </div>
+
+            <div className="liquid-glass-card p-5 sm:p-6 rounded-2xl border-cyan-500/25">
+              <span className="text-xs text-cyan-400 uppercase font-bold tracking-wider">
+                Cleanest Air Transit
+              </span>
+              <div className="text-3xl font-black text-cyan-300 mt-2">
+                {comparison.cleanest_mode}
+              </div>
+              <div className="text-xs text-slate-300 mt-1">Lowest inhaled particulate volume</div>
+            </div>
+
+            <div className="liquid-glass-card p-5 sm:p-6 rounded-2xl border-emerald-500/25">
+              <span className="text-xs text-emerald-400 uppercase font-bold tracking-wider">
+                Max Carbon Offset
+              </span>
+              <div className="text-3xl font-black text-emerald-300 mt-2 flex items-center gap-2">
+                <TreePine className="w-6 h-6 text-emerald-400 shrink-0" />
+                <span className="tabular-nums">{comparison.total_trees_equivalent} Trees/yr</span>
+              </div>
+              <div className="text-xs text-slate-300 mt-1">Equivalent annual absorption factor</div>
             </div>
           </div>
 
           {/* Transit Alternatives Table */}
-          <div className="glass-panel rounded-2xl overflow-hidden border border-slate-800">
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                <Navigation className="w-4 h-4 text-teal-400" />
-                <span>Transit Mode Comparison & Inhaled Particulate Intake</span>
-              </h3>
+          <div className="liquid-glass-card rounded-3xl overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-white/[0.06] flex items-center justify-between">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                <Navigation className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Modal Breakdown: Carbon Emissions & Respiratory Inhalation Intake</span>
+              </h2>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-300">
-                <thead className="bg-slate-900/80 text-slate-400 uppercase text-[11px] font-bold border-b border-slate-800">
+              <table className="w-full text-left text-xs text-slate-200">
+                <thead className="bg-midnight-950/60 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-white/[0.06]">
                   <tr>
-                    <th className="py-3 px-4">Mode</th>
+                    <th className="py-3 px-4">Transit Mode</th>
                     <th className="py-3 px-4">Duration</th>
                     <th className="py-3 px-4">CO2 Footprint</th>
                     <th className="py-3 px-4">Net CO2 Saved</th>
@@ -118,31 +130,31 @@ export const EcoCommutePlanner: React.FC<Props> = ({ comparison, loading, onComp
                     <th className="py-3 px-4">Clinical Recommendation</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60">
+                <tbody className="divide-y divide-white/[0.04]">
                   {comparison.options.map((opt, idx) => (
                     <tr
                       key={idx}
-                      className={`hover:bg-slate-800/30 transition-colors ${
-                        opt.recommended ? 'bg-teal-500/5' : ''
+                      className={`hover:bg-white/[0.02] transition-colors ${
+                        opt.recommended ? 'bg-emerald-500/[0.04]' : ''
                       }`}
                     >
-                      <td className="py-3.5 px-4 font-bold text-slate-100 flex items-center gap-2">
-                        {opt.recommended && <ShieldCheck className="w-4 h-4 text-teal-400 shrink-0" />}
+                      <td className="py-3.5 px-4 font-bold text-white flex items-center gap-2">
+                        {opt.recommended && <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />}
                         <span>{opt.mode_label}</span>
                       </td>
-                      <td className="py-3.5 px-4 font-mono">{opt.duration_minutes} min</td>
-                      <td className="py-3.5 px-4 font-mono">{opt.co2_kg} kg</td>
-                      <td className="py-3.5 px-4 font-mono text-emerald-400 font-bold">
+                      <td className="py-3.5 px-4 font-mono tabular-nums">{opt.duration_minutes} min</td>
+                      <td className="py-3.5 px-4 font-mono tabular-nums">{opt.co2_kg} kg</td>
+                      <td className="py-3.5 px-4 font-mono tabular-nums text-emerald-400 font-bold">
                         {opt.co2_saved_kg > 0 ? `+${opt.co2_saved_kg} kg` : '0 kg (Baseline)'}
                       </td>
                       <td className="py-3.5 px-4">
                         <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border tabular-nums ${
                             opt.exposure_level === 'LOW'
-                              ? 'bg-emerald-500/20 text-emerald-300'
+                              ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
                               : opt.exposure_level === 'MODERATE'
-                              ? 'bg-amber-500/20 text-amber-300'
-                              : 'bg-red-500/20 text-red-300'
+                              ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                              : 'bg-red-500/15 text-red-300 border-red-500/30'
                           }`}
                         >
                           {opt.exposure_level} ({opt.aqi_exposure_score})
