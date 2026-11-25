@@ -1,4 +1,4 @@
-export type Provenance = 'OBSERVED' | 'FORECAST' | 'ESTIMATED';
+export type Provenance = 'OBSERVED' | 'FORECAST' | 'ESTIMATED' | 'MODEL_ANALYSIS';
 
 export type SensitivityLevel =
   | 'NORMAL'
@@ -50,6 +50,11 @@ export interface CurrentAQI {
     category?: string;
     dominant_pollutant?: string;
   };
+  source_provider?: string;
+  native_model?: string;
+  native_resolution?: string;
+  model_valid_utc?: string;
+  model_valid_local?: string;
 }
 
 export interface HourlyForecast {

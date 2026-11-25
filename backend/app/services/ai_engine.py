@@ -120,6 +120,24 @@ class DeterministicExpertEngine:
         aqi = context.current_aqi
         sens = context.sensitivity_profile
 
+        # Zero-fabrication check: if live data is unavailable, communicate honestly
+        if aqi is None or not context.is_live_data_available:
+            reply = (
+                "Live atmospheric telemetry is currently unavailable for this location. "
+                "In strict compliance with AirGuard AI's Zero-Fabrication Policy, I cannot state or estimate current AQI values without verified upstream model data. "
+                "Please check your internet connection or try refreshing the atmospheric station data."
+            )
+            return ChatResponse(
+                reply=reply,
+                session_id="session-unavailable",
+                model_provider="AirGuard-Zero-Fabrication-Safety",
+                context_used=context,
+                suggested_followups=[
+                    "Check network connection",
+                    "Select another city",
+                ],
+            )
+
         if any(w in msg for w in ["mask", "n95", "protect"]):
             if aqi > 100:
                 reply = (
@@ -183,7 +201,7 @@ class AIEngineService:
         activities: List[str],
     ) -> RoutineResponse:
         """Generate personalized daily routine via Gemini, Groq, or deterministic fallback."""
-        if self.gemini_key:
+        if self.gemini_key and self.gemini_key.strip() and not self.gemini_key.startswith("your-"):
             try:
                 from google import genai
                 client = genai.Client(api_key=self.gemini_key)
@@ -232,7 +250,11 @@ class AIEngineService:
 
     async def get_assistant_chat(self, message: str, context: ContextData) -> ChatResponse:
         """Contextual chatbot conversation with zero hallucination guarantee."""
-        if self.gemini_key:
+        # If live telemetry is unavailable, strictly enforce zero-fabrication protocol
+        if context.current_aqi is None or not context.is_live_data_available:
+            return self.expert.generate_chat_reply(message, context)
+
+        if self.gemini_key and self.gemini_key.strip() and not self.gemini_key.startswith("your-"):
             try:
                 from google import genai
                 client = genai.Client(api_key=self.gemini_key)

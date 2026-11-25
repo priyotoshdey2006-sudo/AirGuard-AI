@@ -11,21 +11,29 @@ from app.services.open_meteo import get_aqi_category_and_color, open_meteo_servi
 class RecommendationService:
     @staticmethod
     async def get_daily_routine(request: RoutineRequest) -> RoutineResponse:
-        """Fetch live environmental forecast curve and generate personalized plan."""
-        raw_data = await open_meteo_service.get_raw_air_quality(request.latitude, request.longitude)
-        current = raw_data.get("current", {})
-        
-        # Extract PM2.5 or proxy AQI
-        pm2_5_val = current.get("pm2_5", 35.0)
-        current_aqi = int(pm2_5_val * 2.0) if pm2_5_val else 50
+        """Fetch live environmental forecast curve and generate personalized plan grounded in verified model metrics."""
+        # Retrieve verified current atmospheric analysis
+        aqi_data = await open_meteo_service.get_current_aqi(lat=request.latitude, lon=request.longitude)
+        current_aqi = (
+            aqi_data.us_epa_model_proxy.proxy_index
+            if aqi_data.us_epa_model_proxy and aqi_data.us_epa_model_proxy.proxy_index is not None
+            else (
+                aqi_data.cpcb_model_proxy.proxy_index
+                if aqi_data.cpcb_model_proxy and aqi_data.cpcb_model_proxy.proxy_index is not None
+                else 50
+            )
+        )
 
-        hourly = raw_data.get("hourly", {})
-        times = hourly.get("time", [])[:24]
-        pm2_5_series = hourly.get("pm2_5", [])[:24]
-
+        # Retrieve verified 24-hour diurnal forecast trajectory
+        forecast_data = await open_meteo_service.get_forecast(lat=request.latitude, lon=request.longitude)
         hourly_samples = [
-            {"time": times[i], "pm2_5": pm2_5_series[i], "aqi_us": int((pm2_5_series[i] or 25.0) * 2.0)}
-            for i in range(min(len(times), len(pm2_5_series)))
+            {
+                "time": item.time_local,
+                "pm2_5": item.pm2_5,
+                "aqi_us": item.us_proxy_index or item.cpcb_proxy_index or current_aqi,
+                "category": item.category,
+            }
+            for item in forecast_data.forecast_series[:24]
         ]
 
         return await ai_engine.get_routine_plan(

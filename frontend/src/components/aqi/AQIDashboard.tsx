@@ -30,7 +30,7 @@ export const AQIDashboard: React.FC<Props> = ({ data, loading, onRefresh }) => {
         <AlertCircle className="w-12 h-12 text-amber-400 mx-auto mb-3 drop-shadow-[0_0_12px_rgba(245,158,11,0.3)]" />
         <h3 className="text-base font-bold text-white">Atmospheric Data Unavailable</h3>
         <p className="text-xs text-slate-400 mt-1.5 mb-5 leading-relaxed">
-          Unable to establish telemetry connection with ground monitoring stations.
+          Unable to establish connection with Open-Meteo atmospheric model service.
         </p>
         <button
           onClick={onRefresh}
@@ -219,15 +219,17 @@ export const AQIDashboard: React.FC<Props> = ({ data, loading, onRefresh }) => {
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
               {data.location_name || data.location?.timezone || 'Atmospheric Station'}
             </h1>
-            <ProvenanceBadge provenance={data.provenance || 'OBSERVED'} />
+            <ProvenanceBadge provenance={data.provenance || 'MODEL_ANALYSIS'} />
           </div>
-          <p className="text-xs text-slate-400 mt-1 flex items-center gap-2">
+          <p className="text-xs text-slate-300/80 mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
             <span>
               Coordinates: {latitude != null ? `${latitude.toFixed(4)}°N` : '—'}
               {longitude != null ? `, ${longitude.toFixed(4)}°E` : ''}
             </span>
             <span className="text-slate-600">•</span>
-            <span>Last Telemetry Update: {formattedTime}</span>
+            <span>Source: {data.source_provider || 'Open-Meteo'} ({data.native_model || 'ECMWF CAMS 0.4° Grid'})</span>
+            <span className="text-slate-600">•</span>
+            <span>Model Valid: {formattedTime}</span>
           </p>
         </div>
 
@@ -461,6 +463,19 @@ export const AQIDashboard: React.FC<Props> = ({ data, loading, onRefresh }) => {
               </p>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Scientific Transparency & Provenance Dock */}
+      <div className="liquid-glass-control rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-slate-400 border border-white/[0.08]">
+        <div className="flex items-center gap-2">
+          <Info className="w-4 h-4 text-cyan-400 shrink-0" />
+          <span>
+            <strong className="text-slate-300 font-semibold">Provenance Note:</strong> Values reflect numerical atmospheric composition reanalysis at native 0.4° grid centroid (~45 km resolution) from ECMWF CAMS via Open-Meteo, not direct continuous statutory CAAQMS sensor stations.
+          </span>
+        </div>
+        <div className="shrink-0 text-[11px] text-slate-400 font-mono">
+          Model Valid: {formattedTime}
         </div>
       </div>
     </div>

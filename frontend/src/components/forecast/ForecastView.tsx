@@ -82,8 +82,10 @@ export const ForecastView: React.FC<Props> = ({ forecast, loading }) => {
             </h1>
             <ProvenanceBadge provenance={forecast.provenance || 'FORECAST'} />
           </div>
-          <p className="text-xs text-slate-400 mt-1">
-            Atmospheric dispersion trajectory showing nocturnal inversion peaks and daytime solar convection clearance.
+          <p className="text-xs text-slate-300/80 mt-1 flex flex-wrap items-center gap-x-2">
+            <span>Atmospheric dispersion trajectory from ECMWF CAMS model via Open-Meteo.</span>
+            <span className="text-slate-600">•</span>
+            <span className="text-cyan-400 font-medium">Forward Projection</span>
           </p>
         </div>
 

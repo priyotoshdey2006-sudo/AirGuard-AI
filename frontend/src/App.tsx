@@ -64,6 +64,10 @@ export function App() {
     setLoadingAQI(true);
     setLoadingForecast(true);
     setLoadingCommunity(true);
+    // Reset city-dependent downstream models so they re-evaluate with fresh city coordinates
+    setRoutine(null);
+    setIndoorGuidance(null);
+    setRouteComparison(null);
 
     try {
       const [aqiData, forecastData, reportsData] = await Promise.all([
@@ -184,6 +188,16 @@ export function App() {
     }
   };
 
+  // Safely extract active verified AQI for global consistency across components
+  const resolvedAQI =
+    typeof currentAQI?.aqi_us === 'number'
+      ? currentAQI.aqi_us
+      : typeof currentAQI?.us_epa_model_proxy?.proxy_index === 'number'
+      ? currentAQI.us_epa_model_proxy.proxy_index
+      : typeof currentAQI?.cpcb_model_proxy?.proxy_index === 'number'
+      ? currentAQI.cpcb_model_proxy.proxy_index
+      : null;
+
   const handleSendMessage = async (text: string) => {
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -195,11 +209,27 @@ export function App() {
     setChatLoading(true);
 
     try {
+      const categoryValue =
+        currentAQI?.category ||
+        currentAQI?.us_epa_model_proxy?.category ||
+        currentAQI?.cpcb_model_proxy?.category ||
+        'Moderate';
+
+      const dominantPollutant =
+        currentAQI?.dominant_pollutant ||
+        currentAQI?.us_epa_model_proxy?.dominant_pollutant ||
+        currentAQI?.cpcb_model_proxy?.dominant_pollutant ||
+        'pm2_5';
+
       const res = await api.sendChatMessage(
         text,
         currentCity.lat,
         currentCity.lon,
-        sensitivity
+        sensitivity,
+        resolvedAQI,
+        categoryValue,
+        dominantPollutant,
+        currentCity.name
       );
       const botMsg: ChatMessage = {
         id: `bot-${Date.now()}`,
@@ -328,7 +358,7 @@ export function App() {
         messages={chatMessages}
         loading={chatLoading}
         onSendMessage={handleSendMessage}
-        currentAQI={currentAQI?.aqi_us || 50}
+        currentAQI={resolvedAQI}
         sensitivity={sensitivity}
       />
 

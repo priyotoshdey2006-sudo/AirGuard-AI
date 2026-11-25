@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChatMessage, SensitivityLevel } from '../../types';
 import { MessageSquare, Send, Sparkles, X, Bot, User, ShieldAlert } from 'lucide-react';
+import { MarkdownRenderer } from '../common/MarkdownRenderer';
 
 interface Props {
   isOpen: boolean;
@@ -8,7 +9,7 @@ interface Props {
   messages: ChatMessage[];
   loading: boolean;
   onSendMessage: (text: string) => void;
-  currentAQI: number;
+  currentAQI: number | null;
   sensitivity: SensitivityLevel;
 }
 
@@ -65,8 +66,13 @@ export const AICopilotDrawer: React.FC<Props> = ({
               </span>
             </h3>
             <p className="text-[11px] text-slate-300/80 mt-0.5">
-              Live AQI: <strong className="text-emerald-400 font-semibold">{currentAQI}</strong> • Profile:{' '}
-              <strong className="text-cyan-300 font-semibold">{sensitivity}</strong>
+              Live AQI:{' '}
+              {currentAQI != null ? (
+                <strong className="text-emerald-400 font-semibold">{currentAQI}</strong>
+              ) : (
+                <strong className="text-amber-400 font-medium">Telemetry Unavailable</strong>
+              )}{' '}
+              • Profile: <strong className="text-cyan-300 font-semibold">{sensitivity}</strong>
             </p>
           </div>
         </div>
@@ -103,7 +109,11 @@ export const AICopilotDrawer: React.FC<Props> = ({
                   : 'liquid-glass-card text-slate-200 rounded-2xl rounded-tl-sm border border-white/10 shadow-glass-sm'
               }`}
             >
-              <p className="whitespace-pre-wrap">{msg.text}</p>
+              {msg.sender === 'user' ? (
+                <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
+              ) : (
+                <MarkdownRenderer content={msg.text} />
+              )}
               <div
                 className={`text-[9px] mt-1.5 text-right ${
                   msg.sender === 'user' ? 'text-midnight-950/70 font-medium' : 'text-slate-400'

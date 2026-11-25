@@ -188,3 +188,69 @@ def test_upstream_failure_handling(client):
     data = response.json()
     assert data["error_type"] == "UpstreamServiceUnavailable"
     assert "No synthetic data generated" in data["detail"]
+
+
+def test_assistant_chat_with_dashboard_aqi_consistency(client):
+    """When dashboard sends current AQI, copilot must use that exact AQI and category."""
+    response = client.post(
+        "/api/v1/assistant/chat",
+        json={
+            "message": "Should I wear an N95 mask outside right now?",
+            "latitude": 28.6139,
+            "longitude": 77.2090,
+            "sensitivity_level": "ASTHMATIC",
+            "current_aqi": 154,
+            "category": "Unhealthy",
+            "dominant_pollutant": "pm2_5",
+            "location_name": "Delhi NCR",
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["context_used"]["current_aqi"] == 154
+    assert data["context_used"]["category"] == "Unhealthy"
+    assert "154" in data["reply"] or "Unhealthy" in data["reply"]
+    assert "N95" in data["reply"]
+
+
+def test_assistant_chat_without_client_aqi_fetches_from_open_meteo(client):
+    """When client does not send AQI, copilot fetches live model proxy and does not fallback to 75."""
+    response = client.post(
+        "/api/v1/assistant/chat",
+        json={
+            "message": "What is the current air condition?",
+            "latitude": 28.6139,
+            "longitude": 77.2090,
+            "sensitivity_level": "NORMAL",
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["context_used"]["current_aqi"] is not None
+    assert data["context_used"]["is_live_data_available"] is True
+
+
+def test_assistant_chat_when_upstream_fails_never_fabricates_aqi(client):
+    """When upstream fails and no AQI is provided, copilot must never fabricate 75 or any number."""
+    _CACHE.clear()
+
+    def mock_503(request: httpx.Request):
+        return httpx.Response(503, json={"error": "Service unavailable"})
+
+    open_meteo_service._client = httpx.AsyncClient(transport=httpx.MockTransport(mock_503))
+
+    response = client.post(
+        "/api/v1/assistant/chat",
+        json={
+            "message": "What is the current air condition?",
+            "latitude": 28.6139,
+            "longitude": 77.2090,
+            "sensitivity_level": "NORMAL",
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["context_used"]["current_aqi"] is None
+    assert data["context_used"]["is_live_data_available"] is False
+    assert "unavailable" in data["reply"].lower()
+    assert "75" not in data["reply"]

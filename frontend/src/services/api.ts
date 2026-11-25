@@ -85,13 +85,13 @@ export const api = {
       raw.us_epa_model_proxy?.dominant_pollutant ||
       raw.cpcb_model_proxy?.dominant_pollutant ||
       'pm2_5';
-    const provStr = raw.provenance?.data_provenance || raw.provenance || 'OBSERVED';
+    const provStr = raw.provenance?.data_provenance || raw.provenance || 'MODEL_ANALYSIS';
     const provenance: Provenance =
       provStr === 'MODEL_FORECAST' || provStr === 'FORECAST'
         ? 'FORECAST'
         : provStr === 'UNVERIFIED_ESTIMATE' || provStr === 'ESTIMATED'
         ? 'ESTIMATED'
-        : 'OBSERVED';
+        : 'MODEL_ANALYSIS';
 
     const rawPollutants = raw.pollutants || {};
     const pollutants: Pollutants = {
@@ -124,6 +124,11 @@ export const api = {
       location: raw.location,
       us_epa_model_proxy: raw.us_epa_model_proxy,
       cpcb_model_proxy: raw.cpcb_model_proxy,
+      source_provider: raw.provenance?.source_provider || 'Open-Meteo Air Quality API',
+      native_model: raw.provenance?.native_atmospheric_model || 'ECMWF CAMS Global (IFS-AER)',
+      native_resolution: raw.provenance?.native_spatial_resolution || '0.4° (~45 km)',
+      model_valid_utc: raw.provenance?.model_valid_utc,
+      model_valid_local: raw.provenance?.model_valid_local,
     };
   },
 
@@ -316,7 +321,11 @@ export const api = {
     message: string,
     lat?: number,
     lon?: number,
-    sensitivity: string = 'NORMAL'
+    sensitivity: string = 'NORMAL',
+    currentAqi?: number | null,
+    category?: string,
+    dominantPollutant?: string,
+    locationName?: string
   ): Promise<{ reply: string; model_provider: string; suggested_followups: string[] }> {
     const res = await fetch(`${API_BASE}/assistant/chat`, {
       method: 'POST',
@@ -326,6 +335,10 @@ export const api = {
         latitude: lat,
         longitude: lon,
         sensitivity_level: sensitivity,
+        current_aqi: currentAqi != null ? currentAqi : undefined,
+        category,
+        dominant_pollutant: dominantPollutant,
+        location_name: locationName,
       }),
     });
     return handleResponse<{ reply: string; model_provider: string; suggested_followups: string[] }>(res);

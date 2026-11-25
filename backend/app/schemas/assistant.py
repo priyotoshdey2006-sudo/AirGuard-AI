@@ -10,14 +10,19 @@ class ChatRequest(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     sensitivity_level: Optional[str] = "NORMAL"
+    current_aqi: Optional[int] = None
+    category: Optional[str] = None
+    dominant_pollutant: Optional[str] = None
+    location_name: Optional[str] = None
 
 
 class ContextData(BaseModel):
     location: str = "Detected Area"
-    current_aqi: int = 50
-    category: str = "Good"
-    dominant_pollutant: str = "pm2_5"
+    current_aqi: Optional[int] = None
+    category: str = "Unavailable"
+    dominant_pollutant: str = "unknown"
     sensitivity_profile: str = "NORMAL"
+    is_live_data_available: bool = True
 
 
 class ChatResponse(BaseModel):
