@@ -9,7 +9,9 @@ Verifies:
 6. Provenance metadata and spatial disclaimer contracts.
 7. /api/v1/health and /api/v1/health/db connectivity and diagnostic probes.
 """
-
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 import pytest
 import httpx
 from starlette.testclient import TestClient
@@ -48,19 +50,68 @@ MOCK_METEO_PAYLOAD = {
 
 
 @pytest.fixture(autouse=True)
-def setup_mock_open_meteo():
-    from app.db.session import init_db
-    init_db()
+def setup_mock_open_meteo(tmp_path):
+    """Use an isolated temporary database for every geospatial test."""
+    from app.db import session as db_session
+
+    # Preserve the application's original database configuration.
+    original_engine = db_session.engine
+    original_session_local = db_session.SessionLocal
+    original_async_engine = db_session.async_engine
+    original_async_session_local = db_session.AsyncSessionLocal
+
+    # Create a temporary SQLite database shared by sync and async sessions.
+    database_path = tmp_path / "geospatial_test.db"
+
+    test_sync_engine = create_engine(
+        f"sqlite:///{database_path.as_posix()}",
+        connect_args={"check_same_thread": False},
+    )
+
+    test_async_engine = create_async_engine(
+        f"sqlite+aiosqlite:///{database_path.as_posix()}",
+        connect_args={"check_same_thread": False},
+    )
+
+    db_session.engine = test_sync_engine
+    db_session.SessionLocal = sessionmaker(
+        bind=test_sync_engine,
+        autocommit=False,
+        autoflush=False,
+    )
+
+    db_session.async_engine = test_async_engine
+    db_session.AsyncSessionLocal = async_sessionmaker(
+        bind=test_async_engine,
+        expire_on_commit=False,
+        autoflush=False,
+    )
+
+    # Create tables only in the temporary test database.
+    db_session.init_db()
     _CACHE.clear()
 
     def mock_handler(request: httpx.Request):
         return httpx.Response(200, json=MOCK_METEO_PAYLOAD)
 
-    mock_client = httpx.AsyncClient(transport=httpx.MockTransport(mock_handler))
+    mock_client = httpx.AsyncClient(
+        transport=httpx.MockTransport(mock_handler)
+    )
     open_meteo_service._client = mock_client
+
     yield
+
+    # Restore application database configuration.
     open_meteo_service._client = None
     _CACHE.clear()
+
+    db_session.engine = original_engine
+    db_session.SessionLocal = original_session_local
+    db_session.async_engine = original_async_engine
+    db_session.AsyncSessionLocal = original_async_session_local
+
+    test_sync_engine.dispose()
+    test_async_engine.sync_engine.dispose()
 
 
 @pytest.fixture
